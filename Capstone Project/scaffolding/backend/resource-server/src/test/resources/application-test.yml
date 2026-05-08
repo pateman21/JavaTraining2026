@@ -1,0 +1,38 @@
+spring:
+  # ---- In-memory H2 for tests ----
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=Oracle
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  flyway:
+    enabled: false
+
+  # ---- Kafka (embedded via @EmbeddedKafka) ----
+  kafka:
+    bootstrap-servers: ${spring.embedded.kafka.brokers}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+  # ---- Mock JWT issuer for tests ----
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: https://mock-issuer.example.com
+
+# ---- Payment Processor (WireMock in tests) ----
+payment:
+  processor:
+    base-url: http://localhost:${wiremock.server.port:8089}
+    api-key: test-api-key
+    timeout-ms: 5000

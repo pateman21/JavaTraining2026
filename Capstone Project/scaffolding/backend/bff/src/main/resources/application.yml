@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: banking-bff
+
+  security:
+    oauth2:
+      client:
+        registration:
+          # ---- Primary: Mock Authorization Server (required for capstone) ----
+          mock-auth:
+            client-id: bank-client-bff
+            client-secret: bank-client-bff-secret
+            client-authentication-method: client_secret_basic
+            authorization-grant-type: authorization_code
+            # Redirect back through the Vite dev-proxy (5173) so that the callback
+            # request travels through the same proxy as the rest of the OAuth2 flow.
+            # Without this, changeOrigin:true makes the BFF compute localhost:8081
+            # and mock-auth redirects the browser directly to port 8081, bypassing
+            # the proxy and causing a session/cookie context mismatch.
+            redirect-uri: "${app.frontend-base-url}/login/oauth2/code/{registrationId}"
+            scope: openid, profile, email
+
+          # ---- Secondary: Google (optional "Exceeds" demo) ----
+          # Requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars (set in IntelliJ run config).
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope: openid, profile, email
+
+        provider:
+          mock-auth:
+            issuer-uri: ${AUTH_SERVER_URL:http://localhost:9000}
+
+  # Session cookie settings
+  session:
+    cookie:
+      http-only: true
+      same-site: lax
+
+# ---- Resource Server base URL ----
+bank:
+  resource-server:
+    base-url: ${RESOURCE_SERVER_URL:http://localhost:8081}
+
+# ---- Frontend base URL (used for post-login redirect) ----
+app:
+  frontend-base-url: ${FRONTEND_URL:http://localhost:5173}
+
+logging:
+  level:
+    com.example.bff: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG

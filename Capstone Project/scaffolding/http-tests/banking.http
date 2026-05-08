@@ -1,0 +1,61 @@
+# IntelliJ HTTP Client / VS Code REST Client file.
+#
+# Sign in to the SPA at http://localhost:5173, open DevTools → Application →
+# Session Storage, copy the access_token from the oidc.user:* entry, and paste
+# it below. Tokens last ~1 hour.
+
+@host = http://localhost:8080
+@token = PASTE_GOOGLE_ACCESS_TOKEN_HERE
+
+### health (public)
+GET {{host}}/health
+
+### no token — expect 401
+GET {{host}}/api/v1/accounts
+
+### my user (creates row on first login)
+GET {{host}}/api/v1/users/me
+Authorization: Bearer {{token}}
+
+### my accounts
+GET {{host}}/api/v1/accounts
+Authorization: Bearer {{token}}
+
+### one account (replace acc_xxx with a real ID from the previous response)
+GET {{host}}/api/v1/accounts/acc_xxx
+Authorization: Bearer {{token}}
+
+### transactions for an account
+GET {{host}}/api/v1/accounts/acc_xxx/transactions
+Authorization: Bearer {{token}}
+
+### deposit
+POST {{host}}/api/v1/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accountId": "acc_xxx",
+  "type": "DEPOSIT",
+  "amount": 100.00,
+  "description": "test deposit"
+}
+
+### withdrawal — overdraw to see 422 INSUFFICIENT_FUNDS
+POST {{host}}/api/v1/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accountId": "acc_xxx",
+  "type": "WITHDRAWAL",
+  "amount": 999999999.00
+}
+
+### admin only — should be 403 unless your role is ADMIN
+GET {{host}}/api/v1/admin/users
+Authorization: Bearer {{token}}
+
+### authorization probe — someone else's account, expect 404
+GET {{host}}/api/v1/accounts/acc_someone_elses
+Authorization: Bearer {{token}}

@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------
+  # Oracle 21c Database
+  # ----------------------------------------
+  oracle:
+    image: gvenzl/oracle-xe:21-slim
+    container_name: capstone-oracle
+    environment:
+      - ORACLE_PASSWORD=my_secure_password # Same as your ORACLE_PASSWORD env var
+      - APP_USER=bankapp
+      - APP_USER_PASSWORD=bankapp_password
+    ports:
+      - "1521:1521"
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  # ----------------------------------------
+  # Zookeeper (Required for Kafka)
+  # ----------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: capstone-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+
+  # ----------------------------------------
+  # Kafka Broker
+  # ----------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: capstone-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  # ----------------------------------------
+  # WireMock (Payment Processor Stub)
+  # ----------------------------------------
+  wiremock:
+    image: wiremock/wiremock:3.3.1
+    container_name: capstone-wiremock
+    ports:
+      - "8089:8080"
+    command: ["--global-response-templating", "--disable-gzip", "--verbose"]
+
+volumes:
+  oracle_data:
